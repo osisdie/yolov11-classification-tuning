@@ -3,8 +3,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Ultralytics](https://img.shields.io/badge/Ultralytics-YOLOv11-00FFFF.svg)](https://docs.ultralytics.com/)
-[![CI](https://github.com/osisdie/ultralytics-yolo-training-for-higher-accuracy/actions/workflows/ci.yml/badge.svg)](https://github.com/osisdie/ultralytics-yolo-training-for-higher-accuracy/actions/workflows/ci.yml)
-[![GitHub last commit](https://img.shields.io/github/last-commit/osisdie/ultralytics-yolo-training-for-higher-accuracy)](https://github.com/osisdie/ultralytics-yolo-training-for-higher-accuracy/commits/main)
+[![CI](https://github.com/osisdie/yolov11-classification-tuning/actions/workflows/ci.yml/badge.svg)](https://github.com/osisdie/yolov11-classification-tuning/actions/workflows/ci.yml)
+[![GitHub last commit](https://img.shields.io/github/last-commit/osisdie/yolov11-classification-tuning)](https://github.com/osisdie/yolov11-classification-tuning/commits/main)
 
 > **Best mAP50: 0.98** | **Best cls_loss: 0.26** | **36 hyperparameter runs compared**
 
@@ -22,8 +22,8 @@ A systematic hyperparameter sweep study using YOLOv11 for image classification, 
 ## Installation
 
 ```bash
-git clone https://github.com/osisdie/ultralytics-yolo-training-for-higher-accuracy.git
-cd ultralytics-yolo-training-for-higher-accuracy
+git clone https://github.com/osisdie/yolov11-classification-tuning.git
+cd yolov11-classification-tuning
 pip install -r requirements.txt
 ```
 
