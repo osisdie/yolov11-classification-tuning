@@ -65,4 +65,5 @@ target/
 output/
 
 # Claude Code local settings
-.claude/
+.claude/*
+!.claude/agents/
