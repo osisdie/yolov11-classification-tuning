@@ -5,8 +5,8 @@ Thanks for your interest in contributing! Here's how to get started.
 ## Development Setup
 
 ```bash
-git clone https://github.com/osisdie/ultralytics-yolo-training-for-higher-accuracy.git
-cd ultralytics-yolo-training-for-higher-accuracy
+git clone https://github.com/osisdie/yolov11-classification-tuning.git
+cd yolov11-classification-tuning
 pip install -r requirements.txt
 pip install pre-commit
 pre-commit install
