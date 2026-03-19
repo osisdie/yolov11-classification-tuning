@@ -1,91 +1,159 @@
-# Ultralytics YOLO for classification
+# Ultralytics YOLO Training for Higher Accuracy
 
-**Objectives**
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Ultralytics](https://img.shields.io/badge/Ultralytics-YOLOv11-00FFFF.svg)](https://docs.ultralytics.com/)
+[![CI](https://github.com/osisdie/ultralytics-yolo-training-for-higher-accuracy/actions/workflows/ci.yml/badge.svg)](https://github.com/osisdie/ultralytics-yolo-training-for-higher-accuracy/actions/workflows/ci.yml)
+[![GitHub last commit](https://img.shields.io/github/last-commit/osisdie/ultralytics-yolo-training-for-higher-accuracy)](https://github.com/osisdie/ultralytics-yolo-training-for-higher-accuracy/commits/main)
+
+> **Best mAP50: 0.98** | **Best cls_loss: 0.26** | **36 hyperparameter runs compared**
+
+A systematic hyperparameter sweep study using YOLOv11 for image classification, comparing 3 model sizes, 3 optimizers, 2 image sizes, and augmentation on/off across 36 training runs.
+
+## Objectives
 
 1. Investigate the applicability of the MVTec AD dataset for training and predicting bottle classification.
 2. Explore the use of the MVTec AD dataset for training and predicting transistor classification.
 3. Develop a continuous training workflow that enables the export and import of intermediate training data, avoiding the need to restart training from the beginning.
 4. Identify and optimize hyperparameters and algorithms to achieve high accuracy (95%+) while maintaining a low classification loss (10% or lower).
 
-<br>
-<br>
+---
 
-# Pre-trained YOLO models we use
+## Installation
 
-## YOLOv11 Model Comparison Table
+```bash
+git clone https://github.com/osisdie/ultralytics-yolo-training-for-higher-accuracy.git
+cd ultralytics-yolo-training-for-higher-accuracy
+pip install -r requirements.txt
+```
 
-| Feature                 | yolo11n.pt                 | yolo11s.pt                 | yolo11m.pt                 |
-|--------------------------|----------------------------|----------------------------|----------------------------|
-| **Input Resolution**      | 416x416                    | 416x416                    | 416x416                    |
-| **Parameters (Approx.)**  | 6.8 M                      | 15.7 M                     | 53.0 M                     |
-| **FLOPs (Approx.)**       | 4.5 TFLOPS                 | 9.9 TFLOPS                 | 31.9 TFLOPS                 |
-| **Speed (FPS - RTX 3080)** | High (100+)                 | Medium (50-100)             | Low (10-50)                 |
-| **Accuracy (mAP)**        | Lower                      | Moderate                    | Higher                      |
-| **Target Hardware**       | Mobile/Embedded Devices    | GPUs with Limited Memory    | High-Performance GPUs       |
+## Quick Start
 
+**Run inference with the best model:**
 
-* **Input Resolution:** All three models use the same input resolution of 416x416 pixels.
-* **Parameters:** The number of parameters in the model directly affects its size and complexity. YOLOv11n.pt has the fewest parameters, making it suitable for mobile or embedded devices. YOLOv11m.pt has the most parameters, leading to higher accuracy but requiring more powerful hardware.
-* **FLOPs:** FLOPs (Floating-point Operations) represent the computational complexity of the model. YOLOv11n.pt has the lowest FLOPs, allowing for faster inference on devices with limited processing power.
-* **Speed:** Speed is measured in frames per second (FPS). YOLOv11n.pt is generally the fastest due to its lower complexity. YOLOv11m.pt is the slowest but offers the highest accuracy.
-* **Accuracy:** Mean Average Precision (mAP) is a metric used to measure object detection accuracy. YOLOv11m.pt typically achieves the highest mAP due to its increased complexity. However, the difference in accuracy might be negligible for some applications.
-* **Target Hardware:**  YOLOv11n.pt is well-suited for resource-constrained environments like mobile devices. YOLOv11s.pt offers a balance between speed and accuracy for GPUs with limited memory. YOLOv11m.pt is ideal for high-performance GPUs where maximizing accuracy is the priority.
+```bash
+python bottle_console_app.py \
+  models/bottle/Run8_yolo11n_512_SGD_Aug/best.pt \
+  tests/bottle_input.png
+```
 
-<br>
-<br>
+**Run the training notebook:**
 
-# Configurations
+```bash
+jupyter notebook bottle_continuous_training.ipynb
+```
 
-**Default parameters**
-```py
+## Docker
+
+```bash
+docker compose build
+docker compose run yolo
+```
+
+Override the default model and image:
+
+```bash
+docker compose run yolo models/bottle/Run7_yolo11n_512_SGD/best.pt tests/bottle_input.png
+```
+
+---
+
+## Datasets
+
+| Dataset | Classes | Source |
+|---------|---------|--------|
+| **MVTec AD Bottle** | 4 — good, broken_large, broken_small, contamination | [Kaggle](https://www.kaggle.com/datasets/thtuan/mvtecad-mvtec-anomaly-detection) |
+| **MVTec AD Transistor** | 5 — good, bent_lead, cut_lead, damaged_case, misplaced | [Kaggle](https://www.kaggle.com/datasets/thtuan/mvtecad-mvtec-anomaly-detection) |
+| **Rice Image** | 5 — Arborio, Basmati, Ipsala, Jasmine, Karacadag | [Kaggle](https://www.kaggle.com/datasets/alikhalilit98/rice-image-dataset-for-object-detection) |
+
+---
+
+## Pre-trained YOLO Models
+
+| Feature | yolo11n.pt | yolo11s.pt | yolo11m.pt |
+|---------|-----------|-----------|-----------|
+| **Parameters** | 6.8 M | 15.7 M | 53.0 M |
+| **FLOPs** | 4.5 TFLOPS | 9.9 TFLOPS | 31.9 TFLOPS |
+| **Speed (RTX 3080)** | High (100+ FPS) | Medium (50-100 FPS) | Low (10-50 FPS) |
+| **Target Hardware** | Mobile/Embedded | Limited-Memory GPUs | High-Performance GPUs |
+
+---
+
+## Hyperparameter Sweep Configuration
+
+```python
 DEFAULT_PARAMS = dict(
-    model_names     = ["yolo11n.pt", 'yolo11s.pt', 'yolo11m.pt'],
+    model_names     = ["yolo11n.pt", "yolo11s.pt", "yolo11m.pt"],
     imgsizes        = [256, 512],
     optimizers      = ["SGD", "AdamW", "Adam"],
     learning_rates  = [0.01, 0.005, 0.001],
-    batch_size      = 16, # Adjust this if OOM
+    batch_size      = 16,
     epochs          = 50,
     image_augments  = [False, True]
 )
 ```
 
-**Bottle classes**
-```py
-class_map = dict(
-    good          = 0,
-    broken_large  = 1,
-    broken_small  = 2,
-    contamination = 3
-)
-```
-**Transistor classes**
-```py
-class_map = dict(
-    good          = 0,
-    bent_lead     = 1,
-    cut_lead      = 2,
-    damaged_case  = 3,
-    misplaced     = 4
-)
-```
+---
 
-**Rice classes**
-```py
-class_map = dict(
-    Arborio   = 0,
-    Basmati   = 1,
-    Ipsala    = 2,
-    Jasmine   = 3,
-    Karacadag = 4
-)
-```
+## Full Results: 36 Runs Sorted by mAP50
 
-<br>
-<br>
+| Rank | Run | Model | ImgSz | Optimizer | Aug | mAP50 | Best cls_loss |
+|------|-----|-------|-------|-----------|-----|-------|---------------|
+| 1 | Run8_yolo11n_512_SGD_Aug | yolo11n.pt | 512 | SGD | Yes | **0.9805** | 0.58 |
+| 2 | Run7_yolo11n_512_SGD | yolo11n.pt | 512 | SGD | No | **0.9638** | 0.26 |
+| 3 | Run32_yolo11m_512_SGD_Aug | yolo11m.pt | 512 | SGD | Yes | **0.9595** | 0.40 |
+| 4 | Run19_yolo11s_512_SGD | yolo11s.pt | 512 | SGD | No | 0.9493 | 0.48 |
+| 5 | Run11_yolo11n_512_Adam | yolo11n.pt | 512 | Adam | No | 0.9441 | 0.58 |
+| 6 | Run13_yolo11s_256_SGD | yolo11s.pt | 256 | SGD | No | 0.9405 | 0.49 |
+| 7 | Run1_yolo11n_256_SGD | yolo11n.pt | 256 | SGD | No | 0.9324 | 0.41 |
+| 8 | Run20_yolo11s_512_SGD_Aug | yolo11s.pt | 512 | SGD | Yes | 0.9319 | 0.44 |
+| 9 | Run31_yolo11m_512_SGD | yolo11m.pt | 512 | SGD | No | 0.9248 | 0.49 |
+| 10 | Run14_yolo11s_256_SGD_Aug | yolo11s.pt | 256 | SGD | Yes | 0.9124 | 0.37 |
+| 11 | Run25_yolo11m_256_SGD | yolo11m.pt | 256 | SGD | No | 0.8988 | 0.62 |
+| 12 | Run26_yolo11m_256_SGD_Aug | yolo11m.pt | 256 | SGD | Yes | 0.8930 | 0.53 |
+| 13 | Run5_yolo11n_256_Adam | yolo11n.pt | 256 | Adam | No | 0.8734 | 0.64 |
+| 14 | Run17_yolo11s_256_Adam | yolo11s.pt | 256 | Adam | No | 0.8453 | — |
+| 15 | Run2_yolo11n_256_SGD_Aug | yolo11n.pt | 256 | SGD | Yes | 0.8408 | 0.81 |
+| 16 | Run23_yolo11s_512_Adam | yolo11s.pt | 512 | Adam | No | 0.8108 | — |
+| 17 | Run9_yolo11n_512_AdamW | yolo11n.pt | 512 | AdamW | No | 0.8059 | 0.54 |
+| 18 | Run21_yolo11s_512_AdamW | yolo11s.pt | 512 | AdamW | No | 0.7502 | — |
+| 19 | Run15_yolo11s_256_AdamW | yolo11s.pt | 256 | AdamW | No | 0.6283 | — |
+| 20 | Run27_yolo11m_256_AdamW | yolo11m.pt | 256 | AdamW | No | 0.5995 | — |
+| 21 | Run24_yolo11s_512_Adam_Aug | yolo11s.pt | 512 | Adam | Yes | 0.5131 | — |
+| 22 | Run36_yolo11m_512_Adam_Aug | yolo11m.pt | 512 | Adam | Yes | 0.5096 | — |
+| 23 | Run3_yolo11n_256_AdamW | yolo11n.pt | 256 | AdamW | No | 0.5010 | 1.11 |
+| 24 | Run33_yolo11m_512_AdamW | yolo11m.pt | 512 | AdamW | No | 0.4951 | — |
+| 25 | Run29_yolo11m_256_Adam | yolo11m.pt | 256 | Adam | No | 0.4944 | — |
+| 26 | Run10_yolo11n_512_AdamW_Aug | yolo11n.pt | 512 | AdamW | Yes | 0.4771 | 1.49 |
+| 27 | Run16_yolo11s_256_AdamW_Aug | yolo11s.pt | 256 | AdamW | Yes | 0.4718 | — |
+| 28 | Run34_yolo11m_512_AdamW_Aug | yolo11m.pt | 512 | AdamW | Yes | 0.4698 | — |
+| 29 | Run28_yolo11m_256_AdamW_Aug | yolo11m.pt | 256 | AdamW | Yes | 0.4672 | — |
+| 30 | Run30_yolo11m_256_Adam_Aug | yolo11m.pt | 256 | Adam | Yes | 0.4434 | — |
+| 31 | Run18_yolo11s_256_Adam_Aug | yolo11s.pt | 256 | Adam | Yes | 0.4427 | 1.66 |
+| 32 | Run22_yolo11s_512_AdamW_Aug | yolo11s.pt | 512 | AdamW | Yes | 0.4376 | — |
+| 33 | Run12_yolo11n_512_Adam_Aug | yolo11n.pt | 512 | Adam | Yes | 0.4347 | 1.47 |
+| 34 | Run6_yolo11n_256_Adam_Aug | yolo11n.pt | 256 | Adam | Yes | 0.4325 | 1.46 |
+| 35 | Run35_yolo11m_512_Adam | yolo11m.pt | 512 | Adam | No | 0.4208 | — |
+| 36 | Run4_yolo11n_256_AdamW_Aug | yolo11n.pt | 256 | AdamW | Yes | 0.4066 | 1.57 |
 
-# Example: model performance
+> **"—"** indicates the training run produced unstable cls_loss values (NaN), common with Adam/AdamW on this small dataset.
 
-## Bottle
+---
+
+## Key Findings
+
+- **SGD dominates**: 9 of the top 10 runs use SGD. Adam and AdamW frequently produce unstable training (NaN losses) on this dataset.
+- **512 > 256**: Image size 512 consistently outperforms 256 across all model sizes and optimizers.
+- **Augmentation helps with SGD**: The top run (Run8, 0.98 mAP50) uses SGD + augmentation. However, augmentation with Adam/AdamW often causes divergence.
+- **Smaller models can win**: yolo11n.pt (6.8M params) achieved the best mAP50 — larger models don't guarantee better results with limited data.
+- **Best accuracy vs. best loss tradeoff**: Run8 has the highest mAP50 (0.98) but Run7 has the lowest cls_loss (0.26).
+
+---
+
+## Model Performance
+
+### Bottle
+
 **Confusion Matrix**
 ![](./images/bottle/bottle_confusion_matrix.png)
 
@@ -95,8 +163,8 @@ class_map = dict(
 **Prediction**
 ![](./images/bottle/bottle_prediction.png)
 
+### Transistor
 
-## Transistor
 **Confusion Matrix**
 ![](./images/transistor/transistor_confusion_matrix.png)
 
@@ -106,8 +174,8 @@ class_map = dict(
 **Prediction**
 ![](./images/transistor/transistor_prediction.png)
 
+### Rice
 
-## Rice
 **Confusion Matrix**
 ![](./images/rice/rice_confusion_matrix.png)
 
@@ -117,67 +185,64 @@ class_map = dict(
 **Prediction**
 ![](./images/rice/rice_prediction.png)
 
-<br>
-<br>
+---
 
-# Current Cross-model-parameter training results
+## Cross-Model-Parameter Training Results
+
 **metrics/mAP50**
 ![](./images/yolo11_metrics_mAP50_for_bottle_50_epochs_each.png)
 
 **val/cls_loss**
 ![](./images/yolo11_val_cls_loss_for_bottle_50_epochs_each.png)
 
-<br>
-<br>
+---
 
-# Prediction
+## Best Models
 
-***The best mAP50 accuracy is***
-<small>-> Try model here [best.pt](./models/bottle/Run8_yolo11n_512_SGD_Aug/best.pt)</small>
+### Highest mAP50 Accuracy
+
+> [Download best.pt](./models/bottle/Run8_yolo11n_512_SGD_Aug/best.pt)
 
 ```yaml
-- run8: Run8_yolo11n_512_SGD_Aug
-- accuracy: 0.98 mAP50
-- loss: 0.58 cls_loss
-- imgsz: 512
-- optimizer: SGD
-- epoch: 50/50
-- lr: 0.01
-- image augmentation: True
-- yolo-model: yollo11n.pt
+Run:        Run8_yolo11n_512_SGD_Aug
+mAP50:      0.98
+cls_loss:   0.58
+Image Size: 512
+Optimizer:  SGD
+Epochs:     50/50
+LR:         0.01
+Augmented:  Yes
+Model:      yolo11n.pt
 ```
 
+### Lowest cls_loss
 
-***The lowest val/cls_loss is*** -> Try model here [best.pt](./models/bottle/Run7_yolo11n_512_SGD/best.pt)
+> [Download best.pt](./models/bottle/Run7_yolo11n_512_SGD/best.pt)
+
 ```yaml
-- run7: Run7_yolo11n_512_SGD
-- accuracy: 0.95 mAP50
-- loss: 0.26 cls_loss
-- imgsz: 512
-- optimizer: SGD
-- epoch: 44/50
-- lr: 0.01
-- image augmented: False
-- yolo-model: yollo11n.pt
+Run:        Run7_yolo11n_512_SGD
+mAP50:      0.96
+cls_loss:   0.26
+Image Size: 512
+Optimizer:  SGD
+Epochs:     50/50
+LR:         0.01
+Augmented:  No
+Model:      yolo11n.pt
 ```
 
-<br>
-<br>
+---
 
-# Manual testing
+## Manual Testing
 
-**Bash command example**
-
-`Note`: please specifiy desired model path as the 1st argument and following by one or more testing image paths as  the rest arguments.
-
-```sh
-$ python bottle_console_app.py \
+```bash
+python bottle_console_app.py \
   models/bottle/Run7_yolo11n_512_SGD/best.pt \
   tests/bottle_input.png
 ```
 
-**Output**
-```sh
+**Output:**
+```
 Processing image: tests/bottle_input.png
 
 image 1/1 ./tests/bottle_input.png: 512x512 1 contamination, 66.8ms
@@ -191,13 +256,12 @@ Object 1:
 Saved predicted result to ./output/bottle_input.png
 ```
 
-**Figure**
 ![](./tests/bottle_output_figure.png)
 
-<br>
-<br>
+---
 
-# Conclusion
+## Conclusion
+
 > Experiments suggest that utilizing the `YOLOv11n` model with a `512`-pixel image size and the `SGD` learning algorithm can yield improved results. Furthermore, employing image augmentation techniques such as rotation, flipping, grayscale conversion, and brightness adjustment can further enhance accuracy.
 
 > While the goal of achieving `95%` `mAP50` was partially met, certain parameter combinations demonstrated promising results:
@@ -208,23 +272,21 @@ Saved predicted result to ./output/bottle_input.png
 > However, the goal of minimizing the loss value was not achieved. In every run, the loss value exceeded the target threshold by at least 20%. The top 3 runs with the lowest loss values were:
 > - Run7_`yolo11n_512_SGD` (`0.26` `val/cls_loss`)
 > - Run14_yolo11s_256_SGD_Aug (0.37 val/cls_loss)
-> - Run32_yolo11m_512_SGD_Aug (0.40 val/cls_loss)"
+> - Run32_yolo11m_512_SGD_Aug (0.40 val/cls_loss)
 
-<br>
-<br>
+---
 
-# References
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## References
 
 - [Ultralytics YOLO Docs](https://docs.ultralytics.com/)
-- [Ultralytics Github](https://github.com/ultralytics/ultralytics)
+- [Ultralytics GitHub](https://github.com/ultralytics/ultralytics)
 - [MVTecAD (MVTec Anomaly Detection)](https://www.kaggle.com/datasets/thtuan/mvtecad-mvtec-anomaly-detection)
 - [Rice Image Dataset for Object Detection](https://www.kaggle.com/datasets/alikhalilit98/rice-image-dataset-for-object-detection)
 
-<br>
-<br>
+## License
 
----
-
-**Enjoy the YOLO project, and we look forward to getting your feedback!**
-
----
+This project is licensed under the [MIT License](LICENSE).

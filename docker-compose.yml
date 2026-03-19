@@ -1,0 +1,7 @@
+services:
+  yolo:
+    build: .
+    volumes:
+      - ./models:/app/models
+      - ./tests:/app/tests
+      - ./output:/app/output
