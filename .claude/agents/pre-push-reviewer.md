@@ -68,9 +68,9 @@ git log "$MAIN"..HEAD --format="%H %s"
 Each commit message must:
 - Follow conventional commit format: `type(scope?): description`
   - Valid types: `feat`, `fix`, `refactor`, `docs`, `style`, `test`, `ci`, `chore`, `perf`, `build`, `revert`
-- **NOT** mention AI model names in the subject line:
+- **NOT** mention AI model names anywhere in the message (subject, body, or trailers):
   - Forbidden patterns (case-insensitive): `claude`, `gpt`, `openai`, `anthropic`, `gemini`, `copilot`
-  - `Co-Authored-By` trailers referencing AI models are acceptable (they are metadata, not subject)
+  - Includes `Co-Authored-By` trailers referencing any AI model
 - Be in English (commit subject line)
 
 ## 5. README Freshness
